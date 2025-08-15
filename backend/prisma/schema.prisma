@@ -23,4 +23,42 @@ model User {
   refreshToken  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  blogs        
+}
+
+model Course {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  price       Int
+  image       String?
+  spotPlayerId String? // ID of the course in SpotPlayer
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  courses     Course[]
+  blogs       Blog[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Blog {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
