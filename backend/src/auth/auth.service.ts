@@ -48,4 +48,16 @@ export class AuthService {
       refreshToken: this.jwtService.sign(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
     };
   }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user || user.refreshToken !== refreshToken) {
+      throw new UnauthorizedException('Access Denied');
+    }
+
+    const tokens = this.generateTokens(user.id, user.email);
+    await this.usersService.update(user.id, { refreshToken: tokens.refreshToken });
+    return tokens;
+  }
+
 }
