@@ -1,32 +1,51 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { UsersService } from 'src/users/users.service';
+import { RegisterDto } from './dto/register-dto';
+import { LoginDto } from './dto/login-dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
   constructor(
+    private usersService: UsersService,
     private jwtService: JwtService,
-    private configService: ConfigService,
   ) {}
 
-  async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
-
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: '15m', // Short-lived
-    });
-
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: '7d', // Long-lived
-    });
-
-    return {
-      accessToken,
-      refreshToken,
-    };
+  async register(registerDto: RegisterDto) {
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new BadRequestException('User with this email already exists.');
+    }
+    const user = await this.usersService.create(registerDto);
+    return { message: 'User registered successfully!' };
   }
 
-  // Add your other auth methods here (validateUser, login, etc.)
+  async login(loginDto: LoginDto) {
+    const user = await this.usersService.findByEmail(loginDto.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    const isPasswordMatching = await bcrypt.compare(loginDto.password, user.password);
+    if (!isPasswordMatching) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    // Generate tokens
+    const tokens = this.generateTokens(user.id, user.email);
+
+    // Store refresh token in database for security
+    await this.usersService.update(user.id, { refreshToken: tokens.refreshToken });
+
+    return tokens;
+  }
+
+  generateTokens(userId: string, email: string) {
+    const payload = { sub: userId, email: email };
+    return {
+      accessToken: this.jwtService.sign(payload, { secret: process.env.JWT_SECRET, expiresIn: '15m' }),
+      refreshToken: this.jwtService.sign(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
+    };
+  }
 }
