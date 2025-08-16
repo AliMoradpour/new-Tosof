@@ -5,6 +5,10 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CoursesModule } from './courses/courses.module';
 import { BlogModule } from './blog/blog.module';
+import { CategoriesService } from './categories/categories.service';
+import { UsersModule } from './users/users.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -12,10 +16,13 @@ import { BlogModule } from './blog/blog.module';
       isGlobal: true, // Make ConfigModule available globally
     }),
     AuthModule,
+    UsersModule,
     CoursesModule,
     BlogModule,
+    CategoriesModule,
+    PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CategoriesService],
 })
 export class AppModule {}
