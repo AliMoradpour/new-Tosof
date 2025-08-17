@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+// src/auth/auth.service.ts
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import { RegisterDto } from './dto/register-dto';
@@ -27,16 +32,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials.');
     }
 
-    const isPasswordMatching = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordMatching = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
     if (!isPasswordMatching) {
       throw new UnauthorizedException('Invalid credentials.');
     }
 
-    // Generate tokens
     const tokens = this.generateTokens(user.id, user.email);
-
-    // Store refresh token in database for security
-    await this.usersService.update(user.id, { refreshToken: tokens.refreshToken });
+    await this.usersService.update(user.id, {
+      refreshToken: tokens.refreshToken,
+    });
 
     return tokens;
   }
@@ -44,8 +51,14 @@ export class AuthService {
   generateTokens(userId: string, email: string) {
     const payload = { sub: userId, email: email };
     return {
-      accessToken: this.jwtService.sign(payload, { secret: process.env.JWT_SECRET, expiresIn: '15m' }),
-      refreshToken: this.jwtService.sign(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
+      accessToken: this.jwtService.sign(payload, {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '15m',
+      }),
+      refreshToken: this.jwtService.sign(payload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '7d',
+      }),
     };
   }
 
@@ -56,8 +69,9 @@ export class AuthService {
     }
 
     const tokens = this.generateTokens(user.id, user.email);
-    await this.usersService.update(user.id, { refreshToken: tokens.refreshToken });
+    await this.usersService.update(user.id, {
+      refreshToken: tokens.refreshToken,
+    });
     return tokens;
   }
-
 }
