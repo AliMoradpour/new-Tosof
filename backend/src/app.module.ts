@@ -14,6 +14,8 @@ import { UploadsModule } from './uploads/uploads.module';
 // NEW: ServeStaticModule
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ProductsModule } from './products/products.module';
+import { ToolsModule } from './tools/tools.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { join } from 'path';
     BlogModule,
     CategoriesModule,
     UploadsModule,
+    ProductsModule,
+    ToolsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
