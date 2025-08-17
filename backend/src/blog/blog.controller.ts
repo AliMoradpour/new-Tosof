@@ -1,15 +1,7 @@
-// src/blog/blog.controller.ts
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Delete,
-  Put,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { BlogService } from './blog.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -17,34 +9,26 @@ import { AuthGuard } from '@nestjs/passport';
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
-  @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() createBlogDto: any, @Req() req) {
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads/blogs', // New dedicated folder for blog images
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        callback(null, `${file.originalname.split('.')[0]}-${uniqueSuffix}${ext}`);
+      },
+    }),
+  }))
+  async create(@Body() createBlogDto: any, @UploadedFile() imageFile: Express.Multer.File, @Req() req) {
+    if (!imageFile) {
+      throw new HttpException('Blog image is required', HttpStatus.BAD_REQUEST);
+    }
     return this.blogService.create({
       ...createBlogDto,
       author: { connect: { id: req.user.userId } },
+      image: `uploads/blogs/${imageFile.filename}`, // Save the relative path
     });
-  }
-
-  @Get()
-  findAll() {
-    return this.blogService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.blogService.findOne(id);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateBlogDto: any) {
-    return this.blogService.update(id, updateBlogDto);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.blogService.remove(id);
   }
 }
